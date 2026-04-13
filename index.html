@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduLife PRO | Sistem</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div id="loginPage" class="auth-container">
+    <div class="auth-card">
+        <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
+        <h2>Prijava u sistem</h2>
+        <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">Unesite podatke sa Firebase-a</p>
+        
+        <input type="email" id="email" placeholder="Email adresa">
+        <input type="password" id="password" placeholder="Lozinka">
+        <button class="btn-primary" onclick="handleAuth()">Prijavi se</button>
+        <p id="authError" style="color: #ef4444; font-size: 12px; margin-top: 10px;"></p>
+    </div>
+</div>
+
+<div id="mainApp" class="hidden">
+    <header class="top-header">
+        <div class="navbar-top">
+            <div class="nav-left">
+                <span class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></span>
+                <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
+            </div>
+            <div class="nav-right">
+                <span id="userDisplay" style="font-size: 12px; color: #94a3b8; margin-right: 15px;"></span>
+                <button onclick="handleLogout()" class="logout-btn" title="Odjavi se">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <aside id="sidebar" class="sidebar">
+            <ul>
+                <li onclick="showPage('home')"><i class="fas fa-home"></i> Početna</li>
+                <li onclick="showPage('teretane')"><i class="fas fa-dumbbell"></i> Teretane</li>
+                <li onclick="showPage('profesori')"><i class="fas fa-user-graduate"></i> Profesori</li>
+                <li onclick="showPage('treninzi')"><i class="fas fa-running"></i> Treninzi</li>
+                <li onclick="showPage('finansije')"><i class="fas fa-wallet"></i> Finansije</li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            
+            <section id="page-home" class="page">
+                <div class="section-header">
+                    <h2>Dobrodošli nazad!</h2>
+                    <p>Vaš sistem je spreman za rad.</p>
+                </div>
+            </section>
+
+            <section id="page-teretane" class="page hidden">
+                <div class="section-header"><h2>Teretane</h2></div>
+                <div id="gymCardsContainer" class="gym-grid"></div>
+                <div id="map" style="height: 350px; margin-top: 20px; border-radius: 15px; border: 2px solid white;"></div>
+            </section>
+
+            <section id="page-profesori" class="page hidden">
+                <div class="section-header"><h2>Profesori iz baze</h2></div>
+                <div id="profListContainer" class="professor-grid"></div>
+            </section>
+
+            <section id="page-treninzi" class="page hidden">
+                <h2>Dnevnik Treninga</h2>
+                <div class="table-container">
+                    <table class="smart-table">
+                        <thead><tr><th>Datum</th><th>Vježba</th><th>Setovi</th><th>KG</th><th>Obriši</th></tr></thead>
+                        <tbody id="table-treninzi"></tbody>
+                    </table>
+                </div>
+                <div class="add-form">
+                    <input type="text" id="tr-vjezba" placeholder="Vježba">
+                    <input type="text" id="tr-setovi" placeholder="Setovi">
+                    <input type="text" id="tr-kilaza" placeholder="KG">
+                    <button onclick="snimiTrening()" class="btn-primary">Dodaj</button>
+                </div>
+            </section>
+
+            <section id="page-finansije" class="page hidden">
+                <h2>Finansije</h2>
+                <div class="table-container">
+                    <table class="smart-table">
+                        <thead><tr><th>Opis</th><th>Iznos</th><th>Obriši</th></tr></thead>
+                        <tbody id="table-finansije"></tbody>
+                    </table>
+                </div>
+                <div class="add-form">
+                    <input type="text" id="fin-opis" placeholder="Opis troška">
+                    <input type="text" id="fin-iznos" placeholder="Iznos (KM)">
+                    <button onclick="snimiFinansije()" class="btn-primary">Dodaj</button>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAl0OPeuD_qazuS9hs6gEkOkKUDA0tjnxU",
+        authDomain: "edu-life-ced84.firebaseapp.com",
+        projectId: "edu-life-ced84",
+        storageBucket: "edu-life-ced84.firebasestorage.app",
+        messagingSenderId: "17963199493",
+        appId: "1:17963199493:web:7f2ff8da53dc09dec8c06c"
+    };
+
+    // Inicijalizacija
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Eksportovanje funkcija u globalni prozor da ih script.js može koristiti
+    window.db = db;
+    window.auth = auth;
+    window.fbProps = { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, signInWithEmailAndPassword, signOut };
+
+    // Slušač promjene statusa (Login/Logout)
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("mainApp").classList.remove("hidden");
+            document.getElementById("userDisplay").innerText = user.email;
+            // Pozivamo početno učitavanje iz script.js
+            if (window.inicijalizujAplikaciju) window.inicijalizujAplikaciju();
+        } else {
+            document.getElementById("loginPage").classList.remove("hidden");
+            document.getElementById("mainApp").classList.add("hidden");
+        }
+    });
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
