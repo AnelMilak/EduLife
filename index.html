@@ -16,8 +16,6 @@
     <div class="auth-card">
         <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
         <h2>Prijava u sistem</h2>
-        <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">Unesite podatke sa Firebase-a</p>
-        
         <input type="email" id="email" placeholder="Email adresa">
         <input type="password" id="password" placeholder="Lozinka">
         <button class="btn-primary" onclick="handleAuth()">Prijavi se</button>
@@ -30,18 +28,20 @@
         <div class="navbar-top">
             <div class="nav-left">
                 <span class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></span>
-                <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
+            </div>
+            <div class="nav-center">
+                <span class="logo" onclick="showPage('home')" style="cursor: pointer;">
+                    EduLife <span class="pro-tag">PRO</span>
+                </span>
             </div>
             <div class="nav-right">
                 <span id="userDisplay" style="font-size: 12px; color: #94a3b8; margin-right: 15px;"></span>
-                <button onclick="handleLogout()" class="logout-btn" title="Odjavi se">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
+                <button onclick="handleLogout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
     </header>
 
-    <div class="app-layout">
+    <div class="app-container">
         <aside id="sidebar" class="sidebar">
             <ul>
                 <li onclick="showPage('home')"><i class="fas fa-home"></i> Početna</li>
@@ -52,63 +52,50 @@
             </ul>
         </aside>
 
-        <main class="content">
-            
+        <main id="mainContent" class="content">
             <section id="page-home" class="page">
                 <div class="section-header">
                     <h2>Dobrodošli nazad!</h2>
                     <p>Vaš sistem je spreman za rad.</p>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-dumbbell"></i></div>
+                        <div class="stat-info">
+                            <h3>Teretane</h3>
+                            <p id="home-gym-count" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fas fa-user-tie"></i></div>
+                        <div class="stat-info">
+                            <h3>Profesori</h3>
+                            <p id="home-prof-count" class="stat-number">0</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             <section id="page-teretane" class="page hidden">
                 <div class="section-header"><h2>Teretane</h2></div>
                 <div id="gymCardsContainer" class="gym-grid"></div>
-                <div id="map" style="height: 350px; margin-top: 20px; border-radius: 15px; border: 2px solid white;"></div>
+                <div id="map"></div>
             </section>
 
             <section id="page-profesori" class="page hidden">
-                <div class="section-header"><h2>Profesori iz baze</h2></div>
+                <div class="section-header"><h2>Profesori</h2></div>
                 <div id="profListContainer" class="professor-grid"></div>
             </section>
 
-            <section id="page-treninzi" class="page hidden">
-                <h2>Dnevnik Treninga</h2>
-                <div class="table-container">
-                    <table class="smart-table">
-                        <thead><tr><th>Datum</th><th>Vježba</th><th>Setovi</th><th>KG</th><th>Obriši</th></tr></thead>
-                        <tbody id="table-treninzi"></tbody>
-                    </table>
-                </div>
-                <div class="add-form">
-                    <input type="text" id="tr-vjezba" placeholder="Vježba">
-                    <input type="text" id="tr-setovi" placeholder="Setovi">
-                    <input type="text" id="tr-kilaza" placeholder="KG">
-                    <button onclick="snimiTrening()" class="btn-primary">Dodaj</button>
-                </div>
-            </section>
-
-            <section id="page-finansije" class="page hidden">
-                <h2>Finansije</h2>
-                <div class="table-container">
-                    <table class="smart-table">
-                        <thead><tr><th>Opis</th><th>Iznos</th><th>Obriši</th></tr></thead>
-                        <tbody id="table-finansije"></tbody>
-                    </table>
-                </div>
-                <div class="add-form">
-                    <input type="text" id="fin-opis" placeholder="Opis troška">
-                    <input type="text" id="fin-iznos" placeholder="Iznos (KM)">
-                    <button onclick="snimiFinansije()" class="btn-primary">Dodaj</button>
-                </div>
-            </section>
+            <section id="page-treninzi" class="page hidden"><h2>Treninzi</h2></section>
+            <section id="page-finansije" class="page hidden"><h2>Finansije</h2></section>
         </main>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -120,23 +107,19 @@
         appId: "1:17963199493:web:7f2ff8da53dc09dec8c06c"
     };
 
-    // Inicijalizacija
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Eksportovanje funkcija u globalni prozor da ih script.js može koristiti
     window.db = db;
     window.auth = auth;
-    window.fbProps = { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, signInWithEmailAndPassword, signOut };
+    window.fbProps = { collection, getDocs, signInWithEmailAndPassword, signOut };
 
-    // Slušač promjene statusa (Login/Logout)
     onAuthStateChanged(auth, (user) => {
         if (user) {
             document.getElementById("loginPage").classList.add("hidden");
             document.getElementById("mainApp").classList.remove("hidden");
             document.getElementById("userDisplay").innerText = user.email;
-            // Pozivamo početno učitavanje iz script.js
             if (window.inicijalizujAplikaciju) window.inicijalizujAplikaciju();
         } else {
             document.getElementById("loginPage").classList.remove("hidden");
@@ -144,9 +127,7 @@
         }
     });
 </script>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
