@@ -1,133 +1,170 @@
 <!DOCTYPE html>
 <html lang="bs">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduLife PRO | Sistem</title>
-    
+
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Premješteni stilovi kako bi se izbjegla upozorenja (Warnings) */
+        #regName { display: none; }
+        #authError { color: #ef4444; font-size: 12px; margin-top: 10px; }
+        .auth-footer-text { font-size: 13px; text-align: center; margin-top: 15px; }
+        .toggle-link { color: #4f46e5; text-decoration: none; font-weight: 600; }
+        .nav-center .logo { cursor: pointer; }
+        #userDisplay { font-size: 12px; color: #94a3b8; margin-right: 15px; }
+    </style>
 </head>
+
 <body>
 
-<div id="loginPage" class="auth-container">
-    <div class="auth-card">
-        <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
-        <h2>Prijava u sistem</h2>
-        <input type="email" id="email" placeholder="Email adresa">
-        <input type="password" id="password" placeholder="Lozinka">
-        <button class="btn-primary" onclick="handleAuth()">Prijavi se</button>
-        <p id="authError" style="color: #ef4444; font-size: 12px; margin-top: 10px;"></p>
-    </div>
-</div>
-
-<div id="mainApp" class="hidden">
-    <header class="top-header">
-        <div class="navbar-top">
-            <div class="nav-left">
-                <span class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></span>
-            </div>
-            <div class="nav-center">
-                <span class="logo" onclick="showPage('home')" style="cursor: pointer;">
-                    EduLife <span class="pro-tag">PRO</span>
-                </span>
-            </div>
-            <div class="nav-right">
-                <span id="userDisplay" style="font-size: 12px; color: #94a3b8; margin-right: 15px;"></span>
-                <button onclick="handleLogout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
-            </div>
+    <div id="loginPage" class="auth-container">
+        <div class="auth-card">
+            <span class="logo">EduLife <span class="pro-tag">PRO</span></span>
+            <h2 id="authTitle">Prijava u sistem</h2>
+            
+            <input type="text" id="regName" placeholder="Ime i prezime">
+            <input type="email" id="email" placeholder="Email adresa">
+            <input type="password" id="password" placeholder="Lozinka">
+            
+            <button id="authBtn" class="btn-primary" onclick="handleAuthAction()">Prijavi se</button>
+            <p id="authError"></p>
+            
+            <p class="auth-footer-text">
+                <a href="#" onclick="toggleAuthMode(event)" id="toggleAuthModeLink" class="toggle-link">Nemate račun? Registrujte se</a>
+            </p>
         </div>
-    </header>
-
-    <div class="app-container">
-        <aside id="sidebar" class="sidebar">
-            <ul>
-                <li onclick="showPage('home')"><i class="fas fa-home"></i> Početna</li>
-                <li onclick="showPage('teretane')"><i class="fas fa-dumbbell"></i> Teretane</li>
-                <li onclick="showPage('profesori')"><i class="fas fa-user-graduate"></i> Profesori</li>
-                <li onclick="showPage('treninzi')"><i class="fas fa-running"></i> Treninzi</li>
-                <li onclick="showPage('finansije')"><i class="fas fa-wallet"></i> Finansije</li>
-            </ul>
-        </aside>
-
-        <main id="mainContent" class="content">
-            <section id="page-home" class="page">
-                <div class="section-header">
-                    <h2>Dobrodošli nazad!</h2>
-                    <p>Vaš sistem je spreman za rad.</p>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon blue"><i class="fas fa-dumbbell"></i></div>
-                        <div class="stat-info">
-                            <h3>Teretane</h3>
-                            <p id="home-gym-count" class="stat-number">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon purple"><i class="fas fa-user-tie"></i></div>
-                        <div class="stat-info">
-                            <h3>Profesori</h3>
-                            <p id="home-prof-count" class="stat-number">0</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="page-teretane" class="page hidden">
-                <div class="section-header"><h2>Teretane</h2></div>
-                <div id="gymCardsContainer" class="gym-grid"></div>
-                <div id="map"></div>
-            </section>
-
-            <section id="page-profesori" class="page hidden">
-                <div class="section-header"><h2>Profesori</h2></div>
-                <div id="profListContainer" class="professor-grid"></div>
-            </section>
-
-            <section id="page-treninzi" class="page hidden"><h2>Treninzi</h2></section>
-            <section id="page-finansije" class="page hidden"><h2>Finansije</h2></section>
-        </main>
     </div>
-</div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    <div id="mainApp" class="hidden">
+        <header class="top-header">
+            <div class="navbar-top">
+                <div class="nav-left">
+                    <span class="menu-btn" onclick="toggleSidebar()" aria-label="Meni"><i class="fas fa-bars"></i></span>
+                </div>
+                <div class="nav-center">
+                    <span class="logo" onclick="showPage('home')">
+                        EduLife <span class="pro-tag">PRO</span>
+                    </span>
+                </div>
+                <div class="nav-right">
+                    <span id="userDisplay"></span>
+                    <button onclick="handleLogout()" class="logout-btn" aria-label="Odjava"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </header>
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAl0OPeuD_qazuS9hs6gEkOkKUDA0tjnxU",
-        authDomain: "edu-life-ced84.firebaseapp.com",
-        projectId: "edu-life-ced84",
-        storageBucket: "edu-life-ced84.firebasestorage.app",
-        messagingSenderId: "17963199493",
-        appId: "1:17963199493:web:7f2ff8da53dc09dec8c06c"
-    };
+        <div class="app-container">
+            <aside id="sidebar" class="sidebar">
+                <ul>
+                    <li onclick="showPage('home')"><i class="fas fa-home"></i> Početna</li>
+                    <li onclick="showPage('teretane')"><i class="fas fa-dumbbell"></i> Teretane</li>
+                    <li onclick="showPage('profesori')"><i class="fas fa-user-graduate"></i> Profesori</li>
+                    <li onclick="showPage('treninzi')"><i class="fas fa-running"></i> Treninzi</li>
+                    <li onclick="showPage('finansije')"><i class="fas fa-wallet"></i> Finansije</li>
+                </ul>
+            </aside>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+            <main id="mainContent" class="content">
+                <section id="page-home" class="page">
+                    <div class="section-header">
+                        <h2>Dobrodošli nazad!</h2>
+                        <p>Vaš sistem je spreman za rad.</p>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon blue"><i class="fas fa-dumbbell"></i></div>
+                            <div class="stat-info">
+                                <h3>Teretane</h3>
+                                <p id="home-gym-count" class="stat-number">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon purple"><i class="fas fa-user-tie"></i></div>
+                            <div class="stat-info">
+                                <h3>Profesori</h3>
+                                <p id="home-prof-count" class="stat-number">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-    window.db = db;
-    window.auth = auth;
-    window.fbProps = { collection, getDocs, signInWithEmailAndPassword, signOut };
+                <section id="page-teretane" class="page hidden">
+                    <div class="section-header">
+                        <h2>Teretane</h2>
+                    </div>
+                    <div id="gymCardsContainer" class="gym-grid"></div>
+                    <div id="map"></div>
+                </section>
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            document.getElementById("loginPage").classList.add("hidden");
-            document.getElementById("mainApp").classList.remove("hidden");
-            document.getElementById("userDisplay").innerText = user.email;
-            if (window.inicijalizujAplikaciju) window.inicijalizujAplikaciju();
-        } else {
-            document.getElementById("loginPage").classList.remove("hidden");
-            document.getElementById("mainApp").classList.add("hidden");
+                <section id="page-profesori" class="page hidden">
+                    <div class="section-header">
+                        <h2>Profesori</h2>
+                    </div>
+                    <div id="profListContainer" class="professor-grid"></div>
+                </section>
+
+                <section id="page-treninzi" class="page hidden">
+                    <h2>Treninzi</h2>
+                </section>
+                <section id="page-finansije" class="page hidden">
+                    <h2>Finansije</h2>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabaseUrl = 'https://furlmmlhjjwahfjpqere.supabase.co';
+        const supabaseKey = 'sb_publishable_yQrhJRBuSW-O1IkSnEgUZg_1gQ44a9R';
+
+        let supabase = null;
+
+        // Inicijalizujemo samo ako URL nije placeholder
+        if (supabaseUrl && supabaseUrl !== 'UNESITE_VAS_SUPABASE_URL') {
+            supabase = createClient(supabaseUrl, supabaseKey);
         }
-    });
-</script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="script.js"></script>
+
+        window.supabase = supabase;
+
+        if (supabase) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                postaviStanjeKorisnika(session?.user);
+            });
+
+            supabase.auth.onAuthStateChange((_event, session) => {
+                postaviStanjeKorisnika(session?.user);
+            });
+        } else {
+            console.warn("Supabase nije konfigurisan. Provjerite URL i API kljuc.");
+        }
+
+        function postaviStanjeKorisnika(user) {
+            const loginPage = document.getElementById("loginPage");
+            const mainApp = document.getElementById("mainApp");
+            const userDisplay = document.getElementById("userDisplay");
+
+            if (user) {
+                loginPage.classList.add("hidden");
+                mainApp.classList.remove("hidden");
+                userDisplay.innerText = user.email;
+                if (window.inicijalizujAplikaciju) window.inicijalizujAplikaciju();
+            } else {
+                loginPage.classList.remove("hidden");
+                mainApp.classList.add("hidden");
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
+
