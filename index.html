@@ -111,11 +111,63 @@
                 </section>
 
                 <section id="page-treninzi" class="page hidden">
-                    <h2>Treninzi</h2>
-                </section>
-                <section id="page-finansije" class="page hidden">
-                    <h2>Finansije</h2>
-                </section>
+    <div class="section-header">
+        <h2>Lista Treninga</h2>
+        <button class="btn-primary btn-add">+ Novi Trening</button>
+    </div>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Klijent</th>
+                    <th>Tip Treninga</th>
+                    <th>Vrijeme</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="training-body">
+                <tr>
+                    <td>Marko Marković</td>
+                    <td>Personalni</td>
+                    <td>12:00h</td>
+                    <td><span class="badge blue">Zakazano</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section id="page-finansije" class="page hidden">
+    <div class="section-header">
+        <h2>Finansije</h2>
+    </div>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Opis</th>
+                    <th>Datum</th>
+                    <th>Iznos</th>
+                    <th>Metoda</th>
+                </tr>
+            </thead>
+            <tbody id="finance-body">
+                <tr>
+                    <td>Članarina - Edin Džeko</td>
+                    <td>14.04.2026.</td>
+                    <td class="text-green">+ 50.00 KM</td>
+                    <td>Gotovina</td>
+                </tr>
+                <tr>
+                    <td>Najam opreme</td>
+                    <td>13.04.2026.</td>
+                    <td class="text-red">- 120.00 KM</td>
+                    <td>Kartica</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
             </main>
         </div>
     </div>
