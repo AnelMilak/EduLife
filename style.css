@@ -1,105 +1,160 @@
-* { box-sizing: border-box; transition: all 0.3s ease; }
-body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: #f8fafc; overflow-x: hidden; }
-.hidden { display: none !important; }
+const teretaneData = [
+    { ime: "ProGym Sarajevo", lok: "Kolodvorska 12", web: "https://progym-latest.vercel.app/", lat: 43.8522, lng: 18.3970 },
+    { ime: "BrickFit", lok: "Paromlinska 42", web: "https://www.brickfit.ba/", lat: 43.8505, lng: 18.3855 },
+    { ime: "Akademija Respect", lok: "Danijela Ozme 4", web: "https://akademija-respect.ba/", lat: 43.8592, lng: 18.4141 }
+];
 
-/* NAVBAR */
-.top-header { background: white; border-bottom: 1px solid #e2e8f0; height: 65px; position: sticky; top: 0; z-index: 1000; }
-.navbar-top { display: flex; justify-content: space-between; align-items: center; height: 100%; padding: 0 25px; position: relative; }
-.nav-center { position: absolute; left: 50%; transform: translateX(-50%); }
-.logo { font-weight: 800; font-size: 20px; color: #1e293b; }
-.pro-tag { background: #4f46e5; color: white; font-size: 10px; padding: 2px 8px; border-radius: 6px; }
+const profesoriData = [
+    { ime: "Enis Kapidžić", uloga: "Web Programiranje" },
+    { ime: "Irfan Kubat", uloga: "Razvoj mobilnih aplikacija" },
+    { ime: "Mirela Kurin Tafto", uloga: "Matematika" },
+    { ime: "Azra Bidžan Hodžić", uloga: "Bosanski jezik" }
+];
 
-/* LAYOUT KOJI SE POMJERA */
-.app-container { display: flex; width: 100%; min-height: calc(100vh - 65px); }
+window.showPage = function(id) {
+    console.log("Pokušavam otvoriti stranicu: " + id);
+    
+    // Sakrij sve stranice
+    const pages = document.querySelectorAll(".page");
+    pages.forEach(p => p.classList.add("hidden"));
+    
+    // Pronađi ciljanu stranicu
+    const targetPage = document.getElementById("page-" + id);
+    
+    if (targetPage) {
+        targetPage.classList.remove("hidden");
+        console.log("Stranica " + id + " uspješno prikazana!");
+        
+        if (typeof map !== 'undefined' && map) {
+            setTimeout(() => map.invalidateSize(), 300);
+        }
+    } else {
+        alert("Greška: Ne postoji sekcija sa ID-om 'page-" + id + "' u HTML-u!");
+    }
+};
 
-.sidebar { 
-    width: 0; /* Po
-etno zatvoren */
-    background: white; 
-    border-right: 0px solid transparent;
-    overflow: hidden;
-    white-space: nowrap;
+
+window.toggleSidebar = () => {
+    const sidebar = document.getElementById("sidebar");
+    const mainContent = document.getElementById("mainContent");
+    sidebar.classList.toggle("active");
+    mainContent.classList.toggle("shifted");
+    
+    // Osvježi mapu nakon što se završi animacija pomjeranja
+    if(map) setTimeout(() => map.invalidateSize(), 400);
+};
+
+let isLoginMode = true;
+
+window.toggleAuthMode = (e) => {
+    e.preventDefault();
+    isLoginMode = !isLoginMode;
+    
+    document.getElementById("authTitle").innerText = isLoginMode ? "Prijava u sistem" : "Kreiraj račun";
+    document.getElementById("authBtn").innerText = isLoginMode ? "Prijavi se" : "Registruj se";
+    document.getElementById("toggleAuthModeLink").innerText = isLoginMode ? "Nemate račun? Registrujte se" : "Već imate račun? Prijavite se";
+    document.getElementById("regName").style.display = isLoginMode ? "none" : "block";
+    document.getElementById("authError").innerText = "";
+    document.getElementById("authError").style.color = "#ef4444";
+};
+
+window.handleAuthAction = async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const name = document.getElementById("regName").value;
+    const errorEl = document.getElementById("authError");
+    
+    if(!window.supabase) {
+        errorEl.innerText = "Supabase nije konfigurisan!";
+        return;
+    }
+
+    errorEl.style.color = "#ef4444"; // Reset boje za greške
+
+    if (isLoginMode) {
+        // PRIJAVA
+        const { user, error } = await window.supabase.auth.signInWithPassword({ email, password });
+        if (error) errorEl.innerText = "Greška pri prijavi: " + error.message;
+    } else {
+        // REGISTRACIJA
+        if (!name) {
+            errorEl.innerText = "Unesite ime i prezime!";
+            return;
+        }
+        
+        const { data, error } = await window.supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                data: { puno_ime: name }
+            }
+        });
+
+        if (error) {
+            errorEl.innerText = "Greška pri registraciji: " + error.message;
+        } else {
+            errorEl.style.color = "#10b981"; // Zelena boja
+            errorEl.innerText = "Uspješna registracija! Sada se prijavite.";
+            window.toggleAuthMode(new Event('click')); // Prebaci na login ekran
+        }
+    }
+};
+
+window.handleLogout = async () => {
+    if(window.supabase) {
+        await window.supabase.auth.signOut();
+    }
+};
+
+window.inicijalizujAplikaciju = () => {
+    loadGyms();
+    loadProfs();
+    initMap();
+};
+
+async function loadGyms() {
+    const cont = document.getElementById("gymCardsContainer");
+    
+    // Ukoliko koristite Supabase bazu sa 'teretane' tabelom:
+    if (window.supabase) {
+        let { data: teretane, error } = await window.supabase.from('teretane').select('*');
+        if (!error && teretane) {
+            // Zamjeni lokalne podatke onima iz baze samo ako baza vrati podatke
+            if(teretane.length > 0) teretaneData.length = 0; 
+            teretane.forEach(t => teretaneData.push(t));
+        }
+    }
+
+    if(cont) {
+        // Fallback na postojeće lokalne podatke (teretaneData)
+        cont.innerHTML = teretaneData.map(t => `
+            <div class="gym-card">
+                <i class="fas fa-dumbbell" style="color:#4f46e5; margin-bottom:10px;"></i>
+                <h3>${t.ime}</h3>
+                <p>${t.lok || t.lokacija}</p>
+                <a href="${t.web || t.web_stranica}" target="_blank">Web stranica</a>
+            </div>`).join("");
+    }
+    document.getElementById("home-gym-count").innerText = teretaneData.length;
 }
 
-.sidebar.active { 
-    width: 260px; 
-    border-right: 1px solid #e2e8f0;
+function loadProfs() {
+    const cont = document.getElementById("profListContainer");
+    if(cont) {
+        cont.innerHTML = profesoriData.map(p => `
+            <div class="prof-card">
+                <div class="prof-icon"><i class="fas fa-user-tie"></i></div>
+                <h4>${p.ime}</h4>
+                <span class="badge">${p.uloga}</span>
+            </div>`).join("");
+    }
+    document.getElementById("home-prof-count").innerText = profesoriData.length;
 }
 
-.sidebar ul { list-style: none; padding: 20px; margin: 0; }
-.sidebar li { padding: 15px; cursor: pointer; border-radius: 12px; margin-bottom: 5px; color: #64748b; display: flex; align-items: center; gap: 15px; }
-.sidebar li:hover { background: #f1f5f9; color: #4f46e5; }
-
-.content { 
-    flex: 1; 
-    padding: 40px; 
-    width: 100%;
-}
-
-/* KARTICE I MAPA */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
-.stat-card { background: white; padding: 25px; border-radius: 20px; display: flex; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.stat-icon { width: 55px; height: 55px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-right: 20px; }
-.blue { background: #eef2ff; color: #4f46e5; }
-.purple { background: #faf5ff; color: #9333ea; }
-
-.gym-grid, .professor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-.gym-card, .prof-card { background: white; padding: 30px; border-radius: 20px; text-align: center; border: 1px solid #e2e8f0; }
-.prof-icon { font-size: 30px; color: #cbd5e1; margin-bottom: 15px; }
-
-#map { height: 450px; border-radius: 25px; border: 8px solid white; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-
-/* AUTH */
-.auth-container { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f1f5f9; }
-.auth-card { background: white; padding: 40px; border-radius: 25px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 12px; }
-.btn-primary { width: 100%; background: #4f46e5; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 700; cursor: pointer; }
-.logout-btn { background: none; border: none; color: #ef4444; font-size: 18px; cursor: pointer; }
-/* Stilovi za tabele */
-.table-container {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    overflow-x: auto;
-    margin-top: 20px;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-
-.data-table th {
-    padding: 12px 15px;
-    border-bottom: 2px solid #f1f5f9;
-    color: #64748b;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.data-table td {
-    padding: 15px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
-    font-size: 15px;
-}
-
-/* Boje za statuse i brojeve */
-.badge {
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-}
-.badge.blue { background: #e0e7ff; color: #4338ca; }
-
-.text-green { color: #10b981; font-weight: 600; }
-.text-red { color: #ef4444; font-weight: 600; }
-
-/* Da se redovi "osvijetle" kad pređeš mišem */
-.data-table tr:hover {
-    background-color: #f8fafc;
+let map;
+function initMap() {
+    if(map || !document.getElementById("map")) return;
+    map = L.map('map').setView([43.856, 18.413], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    teretaneData.forEach(t => L.marker([t.lat, t.lng]).addTo(map).bindPopup(t.ime));
 }
